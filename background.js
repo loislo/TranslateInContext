@@ -49,6 +49,8 @@ function buildPassagePrompt(lang) {
 function buildPrompt(lang) {
   return 'You are a dictionary. The user selected a word or short phrase on a web page. ' +
     `Translate it into ${lang} as it is used in the given sentence, and describe it as a dictionary entry. ` +
+    'If the sentence puts a separable prefix elsewhere (German trennbare Verben, e.g. "fährt … ab", ' +
+    'or the selection is that prefix), the entry is the whole verb: translate "abfahren", not "fahren". ' +
     'Reply with only a JSON object, no markdown:\n' +
     `{"translation": "<the selected word translated into ${lang}, in the form that fits the sentence>",\n` +
     ' "lemma": "<the word\'s dictionary form in its own language, with its article if that language has them, e.g. \\"der Fluss\\">",\n' +
