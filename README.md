@@ -41,11 +41,20 @@ launchctl setenv OLLAMA_ORIGINS 'chrome-extension://*'   # then restart Ollama
 
 Very small models (e.g. `llama3.2` 3B) produce visibly broken translations; `qwen3-vl:8b` was the smallest model that translated correctly in testing.
 
+## Prompts
+
+Both prompts are editable in the options page. `{{lang}}` is replaced with the target language, and each has a **Reset to default** button; an empty box falls back to the built-in prompt.
+
+- **Word or short phrase (1–3 words)** — asks for the dictionary entry: `translation`, `lemma`, `forms`, `synonyms`, `note`, `other`. It also tells the model that a German separable prefix stranded elsewhere in the sentence belongs to the entry (`fährt … ab` → `abfahren`).
+- **Longer selection (4+ words)** — asks for a plain translation of the whole selection plus an optional note.
+
+The popup renders whichever of those JSON keys come back, so keep the key names if you edit the text; anything the model omits is simply not shown.
+
 ## Files
 
 - `content.js` — `mouseup` handler (covers both double-click and drag-select), word expansion, sentence extraction (`Intl.Segmenter`), popup (Shadow DOM).
 - `background.js` — service worker; makes all LLM requests.
-- `settings.js` — defaults shared by background and options page.
+- `settings.js` — defaults shared by background and options page, including both prompt templates.
 - `options.html` / `options.js` — settings UI. Keys are stored in `chrome.storage.local` (not synced).
 
 ## Limitations

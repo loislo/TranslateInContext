@@ -17,7 +17,10 @@ async function translate(word, sentence) {
   const s = await getSettings();
   // A few words still deserve a dictionary entry; a longer selection wants plain translation.
   const isPassage = word.split(/\s+/).length > 3;
-  const system = isPassage ? buildPassagePrompt(s.targetLang) : buildPrompt(s.targetLang);
+  const template = isPassage
+    ? (s.passagePrompt || DEFAULT_PASSAGE_PROMPT)
+    : (s.wordPrompt || DEFAULT_WORD_PROMPT);
+  const system = template.replaceAll('{{lang}}', s.targetLang);
   const user = isPassage
     ? (sentence === word ? `Text: "${word}"` : `Text: "${word}"\nIt appears in: "${sentence}"`)
     : `Word: "${word}"\nSentence: "${sentence}"`;
@@ -36,28 +39,6 @@ async function translate(word, sentence) {
       throw new Error(`${err.message} — Gemini fallback also failed: ${fallbackErr.message}`);
     }
   }
-}
-
-function buildPassagePrompt(lang) {
-  return `You translate text that the user selected on a web page into ${lang}. ` +
-    'Translate the whole selection, naturally, keeping its tone. ' +
-    'Reply with only a JSON object, no markdown:\n' +
-    `{"translation": "<the whole selection translated into ${lang}>",\n` +
-    ` "note": "<one short sentence in ${lang} about an idiom or tricky wording in it, or \\"\\" if there is nothing worth noting>"}`;
-}
-
-function buildPrompt(lang) {
-  return 'You are a dictionary. The user selected a word or short phrase on a web page. ' +
-    `Translate it into ${lang} as it is used in the given sentence, and describe it as a dictionary entry. ` +
-    'If the sentence puts a separable prefix elsewhere (German trennbare Verben, e.g. "fährt … ab", ' +
-    'or the selection is that prefix), the entry is the whole verb: translate "abfahren", not "fahren". ' +
-    'Reply with only a JSON object, no markdown:\n' +
-    `{"translation": "<the selected word translated into ${lang}, in the form that fits the sentence>",\n` +
-    ' "lemma": "<the word\'s dictionary form in its own language, with its article if that language has them, e.g. \\"der Fluss\\">",\n' +
-    ' "forms": "<part of speech and the main forms in the word\'s own language, e.g. \\"noun, pl. die Flüsse\\" or \\"verb, ging, gegangen\\"; \\"\\" if there is nothing useful>",\n' +
-    ' "synonyms": ["<up to 3 synonyms in the word\'s own language for the meaning it has in this sentence, in dictionary form; [] if none>"],\n' +
-    ` "note": "<one short sentence in ${lang} explaining what the word means in this sentence>",\n` +
-    ` "other": ["<up to 3 other common meanings of the word, translated into ${lang}, most common first; [] if none>"]}`;
 }
 
 async function callGemini(s, system, user) {

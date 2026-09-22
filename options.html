@@ -9,6 +9,7 @@
     label { display: block; margin: 8px 0; }
     input[type=text], input[type=password], input[type=url] { display: block; width: 100%; box-sizing: border-box; padding: 6px; margin-top: 2px; }
     input[type=number] { width: 5em; padding: 6px; }
+    textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 2px; padding: 6px; font: 12px/1.45 ui-monospace, Menlo, monospace; }
     .hint { color: #666; font-size: 12px; }
     code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; }
     #status { margin-left: 12px; }
@@ -56,6 +57,19 @@
     <label>Model
       <input type="text" id="geminiModel">
     </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Prompts</legend>
+    <div class="hint"><code>{{lang}}</code> is replaced with the target language. The popup fills in from the JSON keys the prompt asks for, so keep the key names.</div>
+    <label>Word or short phrase (1–3 words)
+      <textarea id="wordPrompt" rows="12"></textarea>
+    </label>
+    <button class="reset" data-field="wordPrompt">Reset to default</button>
+    <label>Longer selection (4+ words)
+      <textarea id="passagePrompt" rows="6"></textarea>
+    </label>
+    <button class="reset" data-field="passagePrompt">Reset to default</button>
   </fieldset>
 
   <button id="save">Save</button><span id="status"></span>

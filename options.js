@@ -1,4 +1,5 @@
-const TEXT_FIELDS = ['targetLang', 'openaiBaseUrl', 'openaiModel', 'openaiKey', 'geminiKey', 'geminiModel'];
+const TEXT_FIELDS = ['targetLang', 'openaiBaseUrl', 'openaiModel', 'openaiKey', 'geminiKey', 'geminiModel',
+  'wordPrompt', 'passagePrompt'];
 const OPTIONAL_FIELDS = ['openaiModel', 'openaiKey', 'geminiKey']; // may be saved empty; others fall back to defaults
 
 const $ = (id) => document.getElementById(id);
@@ -12,6 +13,11 @@ getSettings().then((s) => {
   $('primaryTimeoutSec').value = s.primaryTimeoutSec;
   $('fallbackToGemini').checked = s.fallbackToGemini;
 });
+
+document.querySelectorAll('.reset').forEach((b) => b.addEventListener('click', () => {
+  $(b.dataset.field).value = DEFAULT_SETTINGS[b.dataset.field];
+  setStatus('Reset — press Save to keep it.');
+}));
 
 $('save').addEventListener('click', async () => {
   const values = {
