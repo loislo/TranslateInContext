@@ -61,5 +61,5 @@ The popup renders whichever of those JSON keys come back, so keep the key names 
 ## Limitations
 
 - Top-level frame only (no iframes).
-- Selections in inputs, textareas and editable content are ignored, as are selections over 100 characters.
+- Selections in inputs, textareas and editable content are ignored, as are selections over 600 characters.
 - Keyboard selections (shift+arrows) don't trigger it — the trigger is `mouseup`.
