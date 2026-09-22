@@ -11,6 +11,7 @@ function setStatus(text) {
 getSettings().then((s) => {
   for (const f of TEXT_FIELDS) $(f).value = s[f];
   $('primaryTimeoutSec').value = s.primaryTimeoutSec;
+  $('temperature').value = s.temperature;
   $('fallbackToGemini').checked = s.fallbackToGemini;
 });
 
@@ -23,6 +24,7 @@ $('save').addEventListener('click', async () => {
   const values = {
     fallbackToGemini: $('fallbackToGemini').checked,
     primaryTimeoutSec: Number($('primaryTimeoutSec').value) || DEFAULT_SETTINGS.primaryTimeoutSec,
+    temperature: $('temperature').value.trim(), // empty stays empty: the field is then not sent
   };
   for (const f of TEXT_FIELDS) {
     const v = $(f).value.trim();
@@ -50,5 +52,6 @@ $('save').addEventListener('click', async () => {
   await chrome.storage.local.set(values);
   for (const f of TEXT_FIELDS) $(f).value = values[f];
   $('primaryTimeoutSec').value = values.primaryTimeoutSec;
+  $('temperature').value = values.temperature;
   setStatus('Saved.' + warning);
 });

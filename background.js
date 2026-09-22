@@ -47,7 +47,10 @@ async function callGemini(s, system, user) {
   const data = await postJson(url, { 'x-goog-api-key': s.geminiKey }, {
     systemInstruction: { parts: [{ text: system }] },
     contents: [{ role: 'user', parts: [{ text: user }] }],
-    generationConfig: { responseMimeType: 'application/json' },
+    generationConfig: {
+      responseMimeType: 'application/json',
+      ...(temperature(s) === null ? {} : { temperature: temperature(s) }),
+    },
   });
   const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('');
   if (!text) {
@@ -66,6 +69,7 @@ async function callOpenAI(s, system, user) {
       { role: 'system', content: system },
       { role: 'user', content: user },
     ],
+    ...(temperature(s) === null ? {} : { temperature: temperature(s) }),
     // Reasoning costs ~44s per lookup on Qwen3/vLLM and changes nothing about the answer.
     chat_template_kwargs: { enable_thinking: false },
   }, s.primaryTimeoutSec * 1000);
@@ -105,6 +109,12 @@ async function postJson(url, headers, body, timeoutMs) {
     throw err;
   }
   return res.json();
+}
+
+// Left empty the field is simply not sent: some models reject any value but their default.
+function temperature(s) {
+  const t = Number(s.temperature);
+  return s.temperature === '' || s.temperature == null || Number.isNaN(t) ? null : t;
 }
 
 const str = (v) => (v == null ? '' : String(v));

@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS = {
   openaiKey: '',
   openaiModel: 'Qwen/Qwen3.6-27B',
   primaryTimeoutSec: 10,
+  temperature: '', // empty = whatever the model defaults to
   // Fallback: used when the primary is unreachable, times out, or fails with a server error.
   fallbackToGemini: true,
   geminiKey: '',

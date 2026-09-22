@@ -24,6 +24,7 @@ If nothing appears: the page console shows content-script errors, and `chrome://
 Your own server is tried first, Gemini catches the cases where it isn't there.
 
 - **Your server** — any OpenAI-compatible `/v1/chat/completions` endpoint. Defaults to `http://family:9999/v1` with `Qwen/Qwen3.6-27B` (vLLM), which answers in 2–3s. Others: Ollama `:11434/v1`, LM Studio `:1234/v1`, OpenRouter, OpenAI. API key optional. Leave **Model** empty to skip the server and always use Gemini.
+  - **Temperature** is optional and applies to both providers: empty sends no `temperature` field at all (some models accept only their own default), 0–0.3 gives the steadiest dictionary entries.
   - Every request sends `chat_template_kwargs: {enable_thinking: false}`: on that Qwen3 server, reasoning costs ~44s per lookup versus ~1s without it, for the same answer. Ollama and LM Studio ignore the flag; the official OpenAI API rejects unknown fields, so it isn't usable as the server without dropping that line from `background.js`.
 - **Gemini fallback** — key from https://aistudio.google.com/apikey, default model `gemini-2.5-flash`.
 
