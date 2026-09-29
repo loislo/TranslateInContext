@@ -19,18 +19,18 @@ Reply with only a JSON object, no markdown:
 {"translation": "<the whole selection translated into {{lang}}>",
  "note": "<one short sentence in {{lang}} about an idiom or tricky wording in it, or \\"\\" if there is nothing worth noting>"}`;
 
-// Gemini speaks OpenAI's protocol here, so both providers use one code path.
+// Gemini speaks OpenAI's protocol here, so it can go in either slot like any other server.
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai';
 
 const DEFAULT_SETTINGS = {
   targetLang: uiLanguageName(),
-  // Your own server, tried first. Any OpenAI-compatible endpoint; empty model = not configured.
-  localBaseUrl: 'http://family:9999/v1',
-  localModel: 'Qwen/Qwen3.6-27B',
-  localKey: '',
-  // Gemini, used when the server above is unreachable, too slow, or not configured.
-  geminiKey: '',
-  geminiModel: 'gemini-2.5-flash',
+  // Two interchangeable servers: the primary is tried first, the fallback only if it fails.
+  primaryBaseUrl: 'http://family:9999/v1',
+  primaryModel: 'Qwen/Qwen3.6-27B',
+  primaryKey: '',
+  fallbackBaseUrl: GEMINI_BASE_URL,
+  fallbackModel: 'gemini-2.5-flash',
+  fallbackKey: '',
   timeoutSec: 10,
   temperature: '', // empty = whatever the model defaults to
   wordPrompt: DEFAULT_WORD_PROMPT,
@@ -47,6 +47,18 @@ function uiLanguageName() {
   }
 }
 
-function getSettings() {
-  return chrome.storage.local.get(DEFAULT_SETTINGS);
+async function getSettings() {
+  const stored = await chrome.storage.local.get();
+  const s = { ...DEFAULT_SETTINGS, ...stored };
+  // Carry over the older local*/gemini* layout; can go once everyone has saved once.
+  if (stored.localBaseUrl !== undefined && stored.primaryBaseUrl === undefined) {
+    s.primaryBaseUrl = stored.localBaseUrl;
+    s.primaryModel = stored.localModel ?? s.primaryModel;
+    s.primaryKey = stored.localKey ?? '';
+  }
+  if (stored.geminiKey && stored.fallbackKey === undefined) {
+    s.fallbackKey = stored.geminiKey;
+    s.fallbackModel = stored.geminiModel || s.fallbackModel;
+  }
+  return s;
 }

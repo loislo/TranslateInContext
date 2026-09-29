@@ -1,6 +1,6 @@
-const TEXT_FIELDS = ['targetLang', 'localBaseUrl', 'localModel', 'localKey', 'geminiKey', 'geminiModel',
-  'wordPrompt', 'passagePrompt'];
-const OPTIONAL_FIELDS = ['localModel', 'localKey', 'geminiKey']; // may be saved empty; others fall back to defaults
+const SERVER_FIELDS = ['primaryBaseUrl', 'primaryModel', 'primaryKey', 'fallbackBaseUrl', 'fallbackModel', 'fallbackKey'];
+// Server fields are saved exactly as typed, empty included — clearing one is how you switch a slot off.
+const TEXT_FIELDS = ['targetLang', ...SERVER_FIELDS, 'wordPrompt', 'passagePrompt'];
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,24 +26,29 @@ $('save').addEventListener('click', async () => {
   };
   for (const f of TEXT_FIELDS) {
     const v = $(f).value.trim();
-    values[f] = (v || OPTIONAL_FIELDS.includes(f)) ? v : DEFAULT_SETTINGS[f];
+    values[f] = (v || SERVER_FIELDS.includes(f)) ? v : DEFAULT_SETTINGS[f];
+  }
+
+  const origins = [];
+  for (const [baseUrl, model] of [[values.primaryBaseUrl, values.primaryModel], [values.fallbackBaseUrl, values.fallbackModel]]) {
+    if (!baseUrl || !model) continue;
+    try {
+      const url = new URL(baseUrl);
+      origins.push(`${url.protocol}//${url.hostname}/*`);
+    } catch {
+      setStatus(`Not a valid Base URL: ${baseUrl}`);
+      return;
+    }
   }
 
   let warning = '';
-  if (values.localModel) {
-    let url;
+  if (origins.length) {
+    // Reaching a host needs permission; it must be requested directly in the click gesture.
     try {
-      url = new URL(values.localBaseUrl);
-    } catch {
-      setStatus('Base URL is not valid.');
-      return;
-    }
-    // Reaching a custom host needs permission; it must be requested directly in the click gesture.
-    try {
-      const granted = await chrome.permissions.request({ origins: [`${url.protocol}//${url.hostname}/*`] });
-      if (!granted) warning = ' Permission for that host was denied; requests to it will fail.';
+      const granted = await chrome.permissions.request({ origins });
+      if (!granted) warning = ' Permission for those hosts was denied; requests to them will fail.';
     } catch (e) {
-      warning = ` Could not request permission for that host: ${e.message}`;
+      warning = ` Could not request permission: ${e.message}`;
     }
   }
 

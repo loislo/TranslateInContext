@@ -29,30 +29,35 @@
   </label>
 
   <fieldset>
-    <legend>Your model</legend>
+    <legend>Primary model</legend>
     <label>Base URL
-      <input type="url" id="localBaseUrl" placeholder="http://host:8000/v1">
+      <input type="url" id="primaryBaseUrl" placeholder="http://host:8000/v1">
     </label>
     <label>Model
-      <input type="text" id="localModel" placeholder="e.g. Qwen/Qwen3-32B — empty to always use Gemini">
+      <input type="text" id="primaryModel" placeholder="e.g. Qwen/Qwen3-32B">
     </label>
     <label>API key (optional)
-      <input type="password" id="localKey" autocomplete="off">
+      <input type="password" id="primaryKey" autocomplete="off">
     </label>
-    <div class="hint">Any OpenAI-compatible <code>/v1/chat/completions</code> endpoint: vLLM <code>:8000</code>, Ollama <code>:11434</code>, LM Studio <code>:1234</code>, OpenRouter, OpenAI. Tried first; Gemini takes over when it is unreachable or too slow.</div>
-    <div class="hint">Ollama needs <code>OLLAMA_ORIGINS=chrome-extension://*</code> (macOS app: <code>launchctl setenv OLLAMA_ORIGINS "chrome-extension://*"</code>, then restart it).</div>
   </fieldset>
 
   <fieldset>
-    <legend>Gemini</legend>
-    <label>API key
-      <input type="password" id="geminiKey" autocomplete="off">
+    <legend>Fallback model</legend>
+    <label>Base URL
+      <input type="url" id="fallbackBaseUrl" placeholder="https://generativelanguage.googleapis.com/v1beta/openai">
     </label>
     <label>Model
-      <input type="text" id="geminiModel">
+      <input type="text" id="fallbackModel" placeholder="e.g. gemini-2.5-flash">
     </label>
-    <div class="hint">Key from <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. Leave the key empty to use only your own model.</div>
+    <label>API key (optional)
+      <input type="password" id="fallbackKey" autocomplete="off">
+    </label>
   </fieldset>
+
+  <div class="hint">Both are OpenAI-compatible <code>/v1/chat/completions</code> servers: vLLM <code>:8000</code>, Ollama <code>:11434</code>, LM Studio <code>:1234</code>, OpenRouter, OpenAI — and Gemini at
+    <code>https://generativelanguage.googleapis.com/v1beta/openai</code> with a key from <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>. Either slot takes either kind.
+    A slot with an empty Base URL or Model is skipped; the fallback runs only when the primary is unreachable, too slow, or returns a 5xx.</div>
+  <div class="hint">Ollama needs <code>OLLAMA_ORIGINS=chrome-extension://*</code> (macOS app: <code>launchctl setenv OLLAMA_ORIGINS "chrome-extension://*"</code>, then restart it).</div>
 
   <details>
     <summary>Advanced</summary>

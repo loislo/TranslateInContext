@@ -21,12 +21,17 @@ If nothing appears: the page console shows content-script errors, and `chrome://
 
 ## Providers
 
-Both are plain OpenAI-compatible `/v1/chat/completions` servers — Gemini included, through Google's OpenAI layer — so there is one setting block each and one code path behind them.
+Two interchangeable slots, **Primary model** and **Fallback model**, with identical fields: Base URL, Model, API key (optional). Any OpenAI-compatible `/v1/chat/completions` server goes in either one — vLLM `:8000`, Ollama `:11434`, LM Studio `:1234`, OpenRouter, OpenAI, and Gemini through Google's OpenAI layer:
 
-- **Your model** — base URL, model, optional key. vLLM `:8000`, Ollama `:11434`, LM Studio `:1234`, OpenRouter, OpenAI, anything that speaks the protocol. Tried first. Leave **Model** empty to skip it and always use Gemini.
-- **Gemini** — just an API key (and the model name). Used when your model is unreachable, slower than the timeout, or returns a 5xx; the popup then says "via Gemini". Leave the key empty to use only your own model.
+```
+Base URL  https://generativelanguage.googleapis.com/v1beta/openai
+Model     gemini-2.5-flash
+API key   <key from aistudio.google.com/apikey>
+```
 
-A **4xx is not a fallback**: a wrong model name or bad key shows as an error in the popup, otherwise a typo would silently route every lookup to Gemini forever.
+The fallback runs only when the primary is unreachable, slower than the timeout, or returns a 5xx; the popup then says which model answered ("via gemini-2.5-flash"). A slot whose Base URL or Model is empty is skipped, so clearing either field is how you turn a slot off — and it stays empty.
+
+A **4xx is not a fallback**: a wrong model name or bad key shows as an error in the popup, otherwise a typo would silently route every lookup to the other slot forever.
 
 Each server is asked not to "think", since reasoning costs ~44s per lookup on Qwen3/vLLM and ~6s on Gemini without changing the answer. They name that switch differently and reject each other's, so the worker tries `chat_template_kwargs` (vLLM, Ollama, LM Studio), then `reasoning_effort` (Google, OpenAI), then neither — and remembers what each base URL accepted. Measured: Gemini 6.5s → **0.9s**, `Qwen/Qwen3.6-27B` on vLLM ~3s.
 

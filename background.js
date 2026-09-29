@@ -32,12 +32,12 @@ async function translate(word, sentence) {
   for (const [i, server] of servers.entries()) {
     try {
       const result = parseResult(await chat(server, system, user, s));
-      return i === 0 ? result : { ...result, via: server.name };
+      return i === 0 ? result : { ...result, via: server.model };
     } catch (err) {
       // A 4xx is a configuration mistake (wrong model name, bad key) — show it instead of hiding
       // this server behind a fallback that would then be used forever.
       if (err.status && err.status < 500) throw err;
-      console.warn(`${server.name} failed:`, err.message);
+      console.warn(`${server.model} failed:`, err.message);
       firstError ??= err;
     }
   }
@@ -45,14 +45,11 @@ async function translate(word, sentence) {
 }
 
 function configuredServers(s) {
-  const servers = [];
-  if (s.localBaseUrl && s.localModel) {
-    servers.push({ name: 'your server', baseUrl: s.localBaseUrl, model: s.localModel, key: s.localKey, timeoutMs: s.timeoutSec * 1000 });
-  }
-  if (s.geminiKey) {
-    servers.push({ name: 'Gemini', baseUrl: GEMINI_BASE_URL, model: s.geminiModel, key: s.geminiKey });
-  }
-  return servers;
+  const server = (baseUrl, model, key) => (baseUrl && model ? [{ baseUrl, model, key, timeoutMs: s.timeoutSec * 1000 }] : []);
+  return [
+    ...server(s.primaryBaseUrl, s.primaryModel, s.primaryKey),
+    ...server(s.fallbackBaseUrl, s.fallbackModel, s.fallbackKey),
+  ];
 }
 
 // Thinking costs ~44s per lookup on Qwen3/vLLM and ~6s on Gemini, for the same answer — but each
