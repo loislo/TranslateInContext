@@ -14,21 +14,23 @@ also: набережная, причал, береговая линия
 
 1. Open `chrome://extensions`, enable **Developer mode**.
 2. **Load unpacked** → select this folder.
-3. Click the extension's toolbar icon to open settings, pick a provider, set the target language, **Save**.
+3. Click the extension's toolbar icon to open settings, fill in your model and/or a Gemini key, set the target language, **Save**.
 4. Reload any tabs that were already open, then double-click a word.
 
 If nothing appears: the page console shows content-script errors, and `chrome://extensions` → the extension's **service worker** link shows the request log (`translate: …` / `result: …` / `failed: …`).
 
 ## Providers
 
-Your own server is tried first, Gemini catches the cases where it isn't there.
+Both are plain OpenAI-compatible `/v1/chat/completions` servers — Gemini included, through Google's OpenAI layer — so there is one setting block each and one code path behind them.
 
-- **Your server** — any OpenAI-compatible `/v1/chat/completions` endpoint. Defaults to `http://family:9999/v1` with `Qwen/Qwen3.6-27B` (vLLM), which answers in 2–3s. Others: Ollama `:11434/v1`, LM Studio `:1234/v1`, OpenRouter, OpenAI. API key optional. Leave **Model** empty to skip the server and always use Gemini.
-  - **Temperature** is optional and applies to both providers: empty sends no `temperature` field at all (some models accept only their own default), 0–0.3 gives the steadiest dictionary entries.
-  - Every request sends `chat_template_kwargs: {enable_thinking: false}`: on that Qwen3 server, reasoning costs ~44s per lookup versus ~1s without it, for the same answer. Ollama and LM Studio ignore the flag; the official OpenAI API rejects unknown fields, so it isn't usable as the server without dropping that line from `background.js`.
-- **Gemini fallback** — key from https://aistudio.google.com/apikey, default model `gemini-2.5-flash`.
+- **Your model** — base URL, model, optional key. vLLM `:8000`, Ollama `:11434`, LM Studio `:1234`, OpenRouter, OpenAI, anything that speaks the protocol. Tried first. Leave **Model** empty to skip it and always use Gemini.
+- **Gemini** — just an API key (and the model name). Used when your model is unreachable, slower than the timeout, or returns a 5xx; the popup then says "via Gemini". Leave the key empty to use only your own model.
 
-The fallback fires when the server is unreachable, answers slower than the timeout (default 10s), or returns a 5xx. It deliberately does **not** fire on 4xx — a wrong model name or bad key shows up as an error in the popup instead of silently routing everything to Gemini forever. When a translation came from the fallback, the popup says "via Gemini".
+A **4xx is not a fallback**: a wrong model name or bad key shows as an error in the popup, otherwise a typo would silently route every lookup to Gemini forever.
+
+Each server is asked not to "think", since reasoning costs ~44s per lookup on Qwen3/vLLM and ~6s on Gemini without changing the answer. They name that switch differently and reject each other's, so the worker tries `chat_template_kwargs` (vLLM, Ollama, LM Studio), then `reasoning_effort` (Google, OpenAI), then neither — and remembers what each base URL accepted. Measured: Gemini 6.5s → **0.9s**, `Qwen/Qwen3.6-27B` on vLLM ~3s.
+
+Everything else lives under **Advanced**: request timeout, temperature (empty sends no value — some models accept only their own default), and the two prompts.
 
 ### Ollama
 
@@ -54,7 +56,7 @@ The popup renders whichever of those JSON keys come back, so keep the key names 
 ## Files
 
 - `content.js` — `mouseup` handler (covers both double-click and drag-select), word expansion, sentence extraction (`Intl.Segmenter`), popup (Shadow DOM).
-- `background.js` — service worker; makes all LLM requests.
+- `background.js` — service worker; makes all LLM requests, one `chat()` for every provider.
 - `settings.js` — defaults shared by background and options page, including both prompt templates.
 - `options.html` / `options.js` — settings UI. Keys are stored in `chrome.storage.local` (not synced).
 

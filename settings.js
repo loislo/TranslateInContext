@@ -19,18 +19,20 @@ Reply with only a JSON object, no markdown:
 {"translation": "<the whole selection translated into {{lang}}>",
  "note": "<one short sentence in {{lang}} about an idiom or tricky wording in it, or \\"\\" if there is nothing worth noting>"}`;
 
+// Gemini speaks OpenAI's protocol here, so both providers use one code path.
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai';
+
 const DEFAULT_SETTINGS = {
-  // Primary: an OpenAI-compatible server (vLLM, Ollama, LM Studio, ...). Empty model = not configured.
-  openaiBaseUrl: 'http://family:9999/v1',
-  openaiKey: '',
-  openaiModel: 'Qwen/Qwen3.6-27B',
-  primaryTimeoutSec: 10,
-  temperature: '', // empty = whatever the model defaults to
-  // Fallback: used when the primary is unreachable, times out, or fails with a server error.
-  fallbackToGemini: true,
+  targetLang: uiLanguageName(),
+  // Your own server, tried first. Any OpenAI-compatible endpoint; empty model = not configured.
+  localBaseUrl: 'http://family:9999/v1',
+  localModel: 'Qwen/Qwen3.6-27B',
+  localKey: '',
+  // Gemini, used when the server above is unreachable, too slow, or not configured.
   geminiKey: '',
   geminiModel: 'gemini-2.5-flash',
-  targetLang: uiLanguageName(),
+  timeoutSec: 10,
+  temperature: '', // empty = whatever the model defaults to
   wordPrompt: DEFAULT_WORD_PROMPT,
   passagePrompt: DEFAULT_PASSAGE_PROMPT,
 };

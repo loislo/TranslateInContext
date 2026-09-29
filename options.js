@@ -1,6 +1,6 @@
-const TEXT_FIELDS = ['targetLang', 'openaiBaseUrl', 'openaiModel', 'openaiKey', 'geminiKey', 'geminiModel',
+const TEXT_FIELDS = ['targetLang', 'localBaseUrl', 'localModel', 'localKey', 'geminiKey', 'geminiModel',
   'wordPrompt', 'passagePrompt'];
-const OPTIONAL_FIELDS = ['openaiModel', 'openaiKey', 'geminiKey']; // may be saved empty; others fall back to defaults
+const OPTIONAL_FIELDS = ['localModel', 'localKey', 'geminiKey']; // may be saved empty; others fall back to defaults
 
 const $ = (id) => document.getElementById(id);
 
@@ -10,9 +10,8 @@ function setStatus(text) {
 
 getSettings().then((s) => {
   for (const f of TEXT_FIELDS) $(f).value = s[f];
-  $('primaryTimeoutSec').value = s.primaryTimeoutSec;
+  $('timeoutSec').value = s.timeoutSec;
   $('temperature').value = s.temperature;
-  $('fallbackToGemini').checked = s.fallbackToGemini;
 });
 
 document.querySelectorAll('.reset').forEach((b) => b.addEventListener('click', () => {
@@ -22,8 +21,7 @@ document.querySelectorAll('.reset').forEach((b) => b.addEventListener('click', (
 
 $('save').addEventListener('click', async () => {
   const values = {
-    fallbackToGemini: $('fallbackToGemini').checked,
-    primaryTimeoutSec: Number($('primaryTimeoutSec').value) || DEFAULT_SETTINGS.primaryTimeoutSec,
+    timeoutSec: Number($('timeoutSec').value) || DEFAULT_SETTINGS.timeoutSec,
     temperature: $('temperature').value.trim(), // empty stays empty: the field is then not sent
   };
   for (const f of TEXT_FIELDS) {
@@ -32,10 +30,10 @@ $('save').addEventListener('click', async () => {
   }
 
   let warning = '';
-  if (values.openaiModel) {
+  if (values.localModel) {
     let url;
     try {
-      url = new URL(values.openaiBaseUrl);
+      url = new URL(values.localBaseUrl);
     } catch {
       setStatus('Base URL is not valid.');
       return;
@@ -51,7 +49,7 @@ $('save').addEventListener('click', async () => {
 
   await chrome.storage.local.set(values);
   for (const f of TEXT_FIELDS) $(f).value = values[f];
-  $('primaryTimeoutSec').value = values.primaryTimeoutSec;
+  $('timeoutSec').value = values.timeoutSec;
   $('temperature').value = values.temperature;
   setStatus('Saved.' + warning);
 });

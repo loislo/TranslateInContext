@@ -25,54 +25,68 @@ async function translate(word, sentence) {
     ? (sentence === word ? `Text: "${word}"` : `Text: "${word}"\nIt appears in: "${sentence}"`)
     : `Word: "${word}"\nSentence: "${sentence}"`;
 
-  if (!s.openaiModel) return parseResult(await callGemini(s, system, user)); // primary not configured
-  try {
-    return parseResult(await callOpenAI(s, system, user));
-  } catch (err) {
-    // A 4xx is a configuration mistake (wrong model name, bad key) — show it instead of hiding
-    // the primary behind a fallback that would then be used forever.
-    if (!s.fallbackToGemini || (err.status && err.status < 500)) throw err;
-    console.warn('primary failed, falling back to Gemini:', err.message);
+  const servers = configuredServers(s);
+  if (!servers.length) throw new Error('Set a model in the extension options.');
+
+  let firstError;
+  for (const [i, server] of servers.entries()) {
     try {
-      return { ...parseResult(await callGemini(s, system, user)), via: 'Gemini' };
-    } catch (fallbackErr) {
-      throw new Error(`${err.message} — Gemini fallback also failed: ${fallbackErr.message}`);
+      const result = parseResult(await chat(server, system, user, s));
+      return i === 0 ? result : { ...result, via: server.name };
+    } catch (err) {
+      // A 4xx is a configuration mistake (wrong model name, bad key) — show it instead of hiding
+      // this server behind a fallback that would then be used forever.
+      if (err.status && err.status < 500) throw err;
+      console.warn(`${server.name} failed:`, err.message);
+      firstError ??= err;
     }
   }
+  throw firstError;
 }
 
-async function callGemini(s, system, user) {
-  if (!s.geminiKey) throw new Error('Set your Gemini API key in the extension options.');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(s.geminiModel)}:generateContent`;
-  const data = await postJson(url, { 'x-goog-api-key': s.geminiKey }, {
-    systemInstruction: { parts: [{ text: system }] },
-    contents: [{ role: 'user', parts: [{ text: user }] }],
-    generationConfig: {
-      responseMimeType: 'application/json',
-      ...(temperature(s) === null ? {} : { temperature: temperature(s) }),
-    },
-  });
-  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('');
-  if (!text) {
-    const reason = data.promptFeedback?.blockReason || data.candidates?.[0]?.finishReason || 'unknown';
-    throw new Error(`Gemini returned no text (${reason}).`);
+function configuredServers(s) {
+  const servers = [];
+  if (s.localBaseUrl && s.localModel) {
+    servers.push({ name: 'your server', baseUrl: s.localBaseUrl, model: s.localModel, key: s.localKey, timeoutMs: s.timeoutSec * 1000 });
   }
-  return text;
+  if (s.geminiKey) {
+    servers.push({ name: 'Gemini', baseUrl: GEMINI_BASE_URL, model: s.geminiModel, key: s.geminiKey });
+  }
+  return servers;
 }
 
-async function callOpenAI(s, system, user) {
-  const url = s.openaiBaseUrl.replace(/\/+$/, '') + '/chat/completions';
-  const headers = s.openaiKey ? { Authorization: `Bearer ${s.openaiKey}` } : {};
-  const data = await postJson(url, headers, {
-    model: s.openaiModel,
+// Thinking costs ~44s per lookup on Qwen3/vLLM and ~6s on Gemini, for the same answer — but each
+// server names the switch differently and rejects the others, so try them in order once per server.
+const NO_THINKING = [
+  { chat_template_kwargs: { enable_thinking: false } }, // vLLM, Ollama, LM Studio
+  { reasoning_effort: 'none' },                         // Google's OpenAI layer, OpenAI
+  {},                                                   // servers that reject both
+];
+const accepted = new Map(); // base URL -> the variant it accepted, until the worker restarts
+
+async function chat(server, system, user, s) {
+  const url = server.baseUrl.replace(/\/+$/, '') + '/chat/completions';
+  const headers = server.key ? { Authorization: `Bearer ${server.key}` } : {};
+  const body = {
+    model: server.model,
     messages: [
       { role: 'system', content: system },
       { role: 'user', content: user },
     ],
     ...(temperature(s) === null ? {} : { temperature: temperature(s) }),
-    // Reasoning costs ~44s per lookup on Qwen3/vLLM and changes nothing about the answer.
-    chat_template_kwargs: { enable_thinking: false },
-  }, s.primaryTimeoutSec * 1000);
+  };
+
+  let data;
+  for (let i = accepted.get(server.baseUrl) ?? 0; ; i++) {
+    try {
+      data = await postJson(url, headers, { ...body, ...NO_THINKING[i] }, server.timeoutMs);
+      accepted.set(server.baseUrl, i);
+      break;
+    } catch (err) {
+      if (err.status !== 400 || i === NO_THINKING.length - 1) throw err;
+    }
+  }
+
   const message = data.choices?.[0]?.message;
   if (!message?.content) {
     // vLLM with a reasoning parser puts thinking in `reasoning` and leaves `content` null.
