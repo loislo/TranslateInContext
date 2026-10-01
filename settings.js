@@ -37,6 +37,9 @@ const DEFAULT_SETTINGS = {
   passagePrompt: DEFAULT_PASSAGE_PROMPT,
 };
 
+const LEGACY_KEYS = ['openaiBaseUrl', 'openaiModel', 'openaiKey', 'localBaseUrl', 'localModel', 'localKey',
+  'geminiKey', 'geminiModel', 'fallbackToGemini', 'primaryTimeoutSec', 'disableThinking'];
+
 // A locale tag Intl can't parse must not break this script: it is the whole extension's startup path.
 function uiLanguageName() {
   try {
@@ -60,5 +63,8 @@ async function getSettings() {
     s.fallbackKey = stored.geminiKey;
     s.fallbackModel = stored.geminiModel || s.fallbackModel;
   }
+  // Drop them once carried over: a stale key read by an older worker is confusing to debug.
+  const legacy = LEGACY_KEYS.filter((k) => k in stored);
+  if (legacy.length) chrome.storage.local.remove(legacy);
   return s;
 }

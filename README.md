@@ -17,6 +17,8 @@ also: набережная, причал, береговая линия
 3. Click the extension's toolbar icon to open settings, fill in your model and/or a Gemini key, set the target language, **Save**.
 4. Reload any tabs that were already open, then double-click a word.
 
+Changing `background.js`, `settings.js` or the stored settings takes effect only after **reloading the extension** (`chrome://extensions` → ↻); a page reload alone picks up `content.js` but keeps the old service worker running.
+
 If nothing appears: the page console shows content-script errors, and `chrome://extensions` → the extension's **service worker** link shows the request log (`translate: …` / `result: …` / `failed: …`).
 
 ## Providers

@@ -36,8 +36,9 @@ async function translate(word, sentence) {
     } catch (err) {
       // A 4xx is a configuration mistake (wrong model name, bad key) — show it instead of hiding
       // this server behind a fallback that would then be used forever.
+      err.message = `${server.model}: ${err.message}`; // which slot failed is otherwise a guess
       if (err.status && err.status < 500) throw err;
-      console.warn(`${server.model} failed:`, err.message);
+      console.warn('failed:', err.message);
       firstError ??= err;
     }
   }
