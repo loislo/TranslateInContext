@@ -45,6 +45,14 @@ Everything else lives under **Advanced**: request timeout, temperature (empty se
 
 macOS asks each application for permission to use the local network. If Chrome does not have it, every request to a machine on your own network fails with `Failed to fetch`, while `curl` in a terminal works. Open System Settings > Privacy & Security > Local Network, allow Chrome, and restart it. Chrome Beta needs its own permission.
 
+If the permission cannot be repaired (on macOS 26, `tccutil reset LocalNetwork` fails even as root), forward the port over SSH instead and point the extension at `127.0.0.1`. Loopback never needs that permission:
+
+```sh
+ssh -N -L 127.0.0.1:9999:127.0.0.1:9999 <host>   # then use http://127.0.0.1:9999/v1
+```
+
+A LaunchAgent keeps the tunnel open and reopens it after a drop or a reboot; see `examples/local.tunnel.plist`.
+
 ### Ollama
 
 Ollama rejects requests from browser extensions unless the origin is allowed:
