@@ -108,9 +108,12 @@ async function postJson(url, headers, body, timeoutMs) {
       signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
     });
   } catch (e) {
-    throw new Error(e.name === 'TimeoutError'
-      ? `${origin} did not answer within ${timeoutMs / 1000}s.`
-      : `Cannot reach ${origin}: ${e.message}`);
+    if (e.name === 'TimeoutError') throw new Error(`${origin} did not answer within ${timeoutMs / 1000}s.`);
+    // A machine on your own network that the browser cannot reach at all is usually the operating
+    // system blocking it, not the server: macOS asks for this permission per application.
+    const local = /^(?!.*\.)|\.local$|^\d+\.\d+\.\d+\.\d+$/.test(new URL(url).hostname);
+    throw new Error(`Cannot reach ${origin}: ${e.message}`
+      + (local ? ' (macOS: System Settings > Privacy & Security > Local Network > allow Chrome, then restart Chrome.)' : ''));
   }
   if (!res.ok) {
     let msg = `HTTP ${res.status} from ${origin}: ${(await res.text()).slice(0, 300)}`;

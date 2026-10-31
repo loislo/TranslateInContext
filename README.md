@@ -41,6 +41,10 @@ Each server is asked not to "think", since reasoning costs ~44s per lookup on Qw
 
 Everything else lives under **Advanced**: request timeout, temperature (empty sends no value — some models accept only their own default), and the two prompts.
 
+### A local server the browser cannot reach
+
+macOS asks each application for permission to use the local network. If Chrome does not have it, every request to a machine on your own network fails with `Failed to fetch`, while `curl` in a terminal works. Open System Settings > Privacy & Security > Local Network, allow Chrome, and restart it. Chrome Beta needs its own permission.
+
 ### Ollama
 
 Ollama rejects requests from browser extensions unless the origin is allowed:
