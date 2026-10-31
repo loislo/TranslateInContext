@@ -28,21 +28,22 @@ async function translate(word, sentence) {
   const servers = configuredServers(s);
   if (!servers.length) throw new Error('Set a model in the extension options.');
 
-  let firstError;
+  const failures = [];
   for (const [i, server] of servers.entries()) {
     try {
       const result = parseResult(await chat(server, system, user, s));
       return i === 0 ? result : { ...result, via: server.model };
     } catch (err) {
-      // A 4xx is a configuration mistake (wrong model name, bad key) — show it instead of hiding
-      // this server behind a fallback that would then be used forever.
-      err.message = `${server.model}: ${err.message}`; // which slot failed is otherwise a guess
-      if (err.status && err.status < 500) throw err;
-      console.warn('failed:', err.message);
-      firstError ??= err;
+      // Name every server that was tried. When the primary drops out quietly and the fallback is
+      // the one that errors, reporting only the fallback hides the problem you have to fix.
+      failures.push(`${server.model}: ${err.message}`);
+      console.warn('failed:', failures.at(-1));
+      // A 4xx is a configuration mistake (wrong model name, bad key) — stop rather than let a
+      // typo send every lookup to the other slot forever.
+      if (err.status && err.status < 500) break;
     }
   }
-  throw firstError;
+  throw new Error(failures.join(' | '));
 }
 
 function configuredServers(s) {

@@ -26,10 +26,10 @@ const DEFAULT_SETTINGS = {
   targetLang: uiLanguageName(),
   // Two interchangeable servers: the primary is tried first, the fallback only if it fails.
   primaryBaseUrl: 'http://family:9999/v1',
-  primaryModel: 'Qwen/Qwen3.6-27B',
+  primaryModel: 'qwen-27b',
   primaryKey: '',
   fallbackBaseUrl: GEMINI_BASE_URL,
-  fallbackModel: 'gemini-2.5-flash',
+  fallbackModel: 'gemini-flash-latest', // alias: no version to update when one is retired
   fallbackKey: '',
   timeoutSec: 10,
   temperature: '', // empty = whatever the model defaults to

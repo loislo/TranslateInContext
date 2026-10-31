@@ -31,6 +31,8 @@ Model     gemini-2.5-flash
 API key   <key from aistudio.google.com/apikey>
 ```
 
+For Gemini, prefer the alias `gemini-flash-latest` (or `gemini-pro-latest`) over a numbered name such as `gemini-2.5-flash`: the alias follows Google's current model, so nothing has to be changed when a version is retired.
+
 The fallback runs only when the primary is unreachable, slower than the timeout, or returns a 5xx; the popup then says which model answered ("via gemini-2.5-flash"). A slot whose Base URL or Model is empty is skipped, so clearing either field is how you turn a slot off — and it stays empty.
 
 A **4xx is not a fallback**: a wrong model name or bad key shows as an error in the popup, otherwise a typo would silently route every lookup to the other slot forever.
