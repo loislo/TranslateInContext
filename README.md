@@ -69,6 +69,6 @@ The popup renders whichever of those JSON keys come back, so keep the key names 
 
 ## Limitations
 
-- Top-level frame only (no iframes).
+- The popup is drawn inside the frame that holds the text, so in a small iframe it is clipped to that frame.
 - Selections in inputs, textareas and editable content are ignored, as are selections over 600 characters.
 - Keyboard selections (shift+arrows) don't trigger it — the trigger is `mouseup`.
